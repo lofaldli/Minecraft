@@ -3,32 +3,48 @@ using System.Collections;
 using System.Collections.Generic;
 
 namespace Minecraft {
-    public class ItemDatabase : MonoBehaviour {
-        public static ItemDatabase itemDatabase;
-        public List<Item> items;
+    public class ItemDatabase : ScriptableObject {
+		static List<Item> items_ ;
 
-        void Start() {
-            itemDatabase = this;
-            if (items.Count == 0) {
-                items = new List<Item> ();
-                items.Add(new Item(1, "Grass", 64, ItemTexture.Grass));
-                items.Add(new Item(2, "Dirt", 64, ItemTexture.Dirt));
-                items.Add(new Item(3, "Stone", 64, ItemTexture.Stone));
-                items.Add(new Item(4, "Cobblestone", 64, ItemTexture.Cobblestone));
-                items.Add(new Item(5, "Bedrock", 64, ItemTexture.Bedrock));
-                items.Add(new Item(6, "Tree trunk", 64, ItemTexture.TreeTrunk));
-                items.Add(new Item(7, "Tree leaves", 64, ItemTexture.TreeLeaves));
-            }
-        }
+		public static void Init() {
+			items_ = new List<Item> ();
+			Add(new Item(1, "Grass", 64, ItemTexture.Grass));
+			Add(new Item(2, "Dirt", 64, ItemTexture.Dirt));
+			Add(new Item(3, "Stone", 64, ItemTexture.Stone));
+			Add(new Item(4, "Cobblestone", 64, ItemTexture.Cobblestone));
+			Add(new Item(5, "Bedrock", 64, ItemTexture.Bedrock));
+			Add(new Item(6, "Tree trunk", 64, ItemTexture.TreeTrunk));
+			Add(new Item(7, "Tree leaves", 64, ItemTexture.TreeLeaves));
+		}
 
-        public Item GetItemById(int id) {
-            foreach (Item item in items) {
-                if (id == item.id) {
-                    return item;
-                }
-            }
-            return null;
-        }
+		public static List<Item> GetItems() {
+			return items_;
+		}
+
+		public static void Add(Item item) {
+			items_.Add(item);
+		}
+
+		public static void Remove(Item item) {
+			items_.Remove(item);
+		}
+
+		public static Item GetItemById(int id) {
+			foreach (Item item in items_) {
+				if (item.id == id) {
+					return item;
+				}
+			}
+			return null;
+		}
+		public static Item GetItemByName(string name) {
+			foreach (Item item in items_) {
+				if (item.name == name) {
+					return item;
+				}
+			}
+			return null;
+		}
     }
 
     [System.Serializable]

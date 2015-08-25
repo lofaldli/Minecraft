@@ -34,7 +34,8 @@ namespace Minecraft {
         int[,,] map;
         int[,] heightMap;
 
-        static Vector3 offset0, offset1, offset2;
+        // HACK: these are initialized from World.cs move to world settings?
+		public static Vector3 offset0, offset1, offset2;
 
         void Start() {
             chunks.Add(this);
@@ -43,27 +44,31 @@ namespace Minecraft {
             meshFilter = GetComponent<MeshFilter> ();
             meshCollider = GetComponent<MeshCollider> ();
 
-            Random.seed = World.instance.seed;
-            offset0 = new Vector3(Random.value * 100000f, 0, Random.value * 100000f);
-            offset1 = new Vector3(Random.value * 100000f, 0, Random.value * 100000f);
-            offset2 = new Vector3(Random.value * 100000f, 0, Random.value * 100000f);
-
             if (unInitializedChunks[0] == this) {
-                Generate();
+                StartCoroutine(Generate());
             }
     	}
 
-        public void Generate() {
-            unInitializedChunks.Remove(this);
-
+        public IEnumerator Generate() {
+			
             map = new int[size, height, size];
             heightMap = new int[size,size];
 
-            GenerateTerrain();
-            //AddTrees();
+			initialized = true;
+			unInitializedChunks.Remove(this);
 
-            initialized = true;
+			yield return null;
+
+			GenerateHeightMap();
+
+            if (World.instance.generateTerrain) GenerateTerrain();
+            if (World.instance.generateTrees) AddTrees();
+
             StartCoroutine(BuildMesh());
+
+			if (unInitializedChunks.Count > 0) {
+				unInitializedChunks[0].Generate();
+			}
         }
 
 
@@ -83,6 +88,8 @@ namespace Minecraft {
                 }
             }
 
+			yield return null;
+
             mesh = new Mesh();
             mesh.vertices = vertices.ToArray();
             mesh.triangles = triangles.ToArray();
@@ -93,19 +100,21 @@ namespace Minecraft {
             meshFilter.mesh = mesh;
             meshCollider.sharedMesh = mesh;
 
-            yield return null;
 
-            if (unInitializedChunks.Count > 0) {
-                unInitializedChunks[0].Generate();
-            }
         }
+
+		void GenerateHeightMap() {
+			for (int x = 0; x < size; x++) {
+				for (int z = 0; z < size; z++) {
+					heightMap[x,z] = CalculateHeightMapValue(new Vector3(x,0f,z) + transform.position);
+				}
+			}
+		}
 
         void GenerateTerrain() {
             for (int x = 0; x < size; x++) {
                 for (int z = 0; z < size; z++) {
-                    heightMap[x,z] = CalculateHeightMapValue(new Vector3(x,0f,z) + transform.position);
                     for (int y = 0; y < height; y++) {
-
                         int id = CalculateId(new Vector3(x,y,z) + transform.position);
                         map[x,y,z] = id;
                     }
@@ -114,7 +123,7 @@ namespace Minecraft {
         }
 
         void AddTrees(){
-            Tree.AddToArray(map, new Vector3(8,heightMap[8,8]+1,8));
+            Tree.Place(new Vector3(8,heightMap[8,8]+1,8) + transform.position);
         }
 
         private static int CalculateHeightMapValue(Vector3 position) {
@@ -338,7 +347,7 @@ namespace Minecraft {
             Vector2 _11 = new Vector2(1,1) * resolution;
             Vector2 _10 = new Vector2(1,0) * resolution;
 
-            ItemTexture texture = ItemDatabase.itemDatabase.GetItemById(id).texture;
+            ItemTexture texture = ItemDatabase.GetItemById(id).texture;
             if (normal == Vector3.up) {
                 offset = texture.top;
             } else if (normal == Vector3.down) {
@@ -357,52 +366,6 @@ namespace Minecraft {
             uv.Add(_01 + offset);
             uv.Add(_11 + offset);
             uv.Add(_10 + offset);
-        }
-    }
-
-    public class Tree : MonoBehaviour {
-
-        static int minHeight = 5;
-        static int maxHeight = 10;
-
-        static int trunkId = 6;
-        static int leafId = 7;
-
-        public static void AddToArray(int[,,] map, Vector3 position) {
-            int x0 = Mathf.FloorToInt(position.x);
-            int y0 = Mathf.FloorToInt(position.y);
-            int z0 = Mathf.FloorToInt(position.z);
-
-            int height = Random.Range(minHeight, Mathf.Min(maxHeight, Chunk.height - y0));
-
-            // trunk
-            for (int y = 0; y < height - 1; y++) {
-                    map[x0, y + y0, z0] = trunkId;
-            }
-
-            // top leaves
-            map[x0, y0 + height - 1, z0] = leafId;
-            map[x0 + 1, y0 + height - 1, z0] = leafId;
-            map[x0 - 1, y0 + height - 1, z0] = leafId;
-            map[x0, y0 + height - 1, z0 + 1] = leafId;
-            map[x0, y0 + height - 1, z0 - 1] = leafId;
-
-            // top - 1 leaves
-            for (int x = -1; x <= 1; x++) {
-                for (int z = -1; z <= 1; z++) {
-                    if (!(x == 0 && z == 0)) {
-                        map[x0 + x, y0 + height - 2, z0 + z] = leafId;
-                    }
-                }
-            }
-            for (int x = -2; x <= 2; x++) {
-                for (int z = -2; z <= 2; z++) {
-                    if (!(x == 0 && z == 0)) {
-                        map[x0 + x, y0 + height - 3, z0 + z] = leafId;
-                        map[x0 + x, y0 + height - 4, z0 + z] = leafId;
-                    }
-                }
-            }
         }
     }
 }

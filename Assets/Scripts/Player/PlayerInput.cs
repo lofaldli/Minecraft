@@ -31,7 +31,7 @@ namespace Minecraft {
 
                 TooltipUI.SetActive(true);
                 int id = Chunk.GetWorldId(hit.point + (-0.1f * hit.normal));
-                Item item = ItemDatabase.itemDatabase.GetItemById(id);
+                Item item = ItemDatabase.GetItemById(id);
                 if (item != null) {
                     TooltipUI.text.text = "" + item.name;
                 }
