@@ -10,6 +10,7 @@ namespace Minecraft {
 
         public int size = 0;
         public int seed = 0;
+
         [Range(0.01f,0.1f)] public float frequency = 0.02f;
         [Range(0f,32f)] public float amplitude = 16.0f;
         [Range(0f,64f)] public float baseHeight = 32.0f;

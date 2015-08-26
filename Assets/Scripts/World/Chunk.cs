@@ -45,30 +45,25 @@ namespace Minecraft {
             meshCollider = GetComponent<MeshCollider> ();
 
             if (unInitializedChunks[0] == this) {
-                StartCoroutine(Generate());
+                Generate();
             }
     	}
 
-        public IEnumerator Generate() {
+        public void Generate() {
 			
             map = new int[size, height, size];
             heightMap = new int[size,size];
-
-			initialized = true;
-			unInitializedChunks.Remove(this);
-
-			yield return null;
 
 			GenerateHeightMap();
 
             if (World.instance.generateTerrain) GenerateTerrain();
             if (World.instance.generateTrees) AddTrees();
 
-            StartCoroutine(BuildMesh());
+			initialized = true;
+			unInitializedChunks.Remove(this);
 
-			if (unInitializedChunks.Count > 0) {
-				unInitializedChunks[0].Generate();
-			}
+
+            StartCoroutine(BuildMesh());
         }
 
 
@@ -88,7 +83,6 @@ namespace Minecraft {
                 }
             }
 
-			yield return null;
 
             mesh = new Mesh();
             mesh.vertices = vertices.ToArray();
@@ -100,7 +94,11 @@ namespace Minecraft {
             meshFilter.mesh = mesh;
             meshCollider.sharedMesh = mesh;
 
+			yield return null;
 
+			if (unInitializedChunks.Count > 0) {
+				unInitializedChunks[0].Generate();
+			}
         }
 
 		void GenerateHeightMap() {
@@ -123,7 +121,7 @@ namespace Minecraft {
         }
 
         void AddTrees(){
-            Tree.Place(new Vector3(8,heightMap[8,8]+1,8) + transform.position);
+            Tree.Place(this, new Vector3(8,heightMap[8,8]+1,8));
         }
 
         private static int CalculateHeightMapValue(Vector3 position) {
@@ -211,9 +209,10 @@ namespace Minecraft {
         public void SetLocalId(int x, int y, int z, int id) {
             if (y < 0 || y > height - 1 || x < 0 || x > size - 1 || z < 0 || z > size - 1) return;
 
-            if (initialized) map[x,y,z] = id;
-
-            StartCoroutine(BuildMesh());
+			map[x,y,z] = id;
+            if (initialized) { 
+            	StartCoroutine(BuildMesh());
+			}
 
             Chunk chunk = null;
             if (x == 0) {
@@ -272,7 +271,7 @@ namespace Minecraft {
     }
 
     public class Block {
-
+		// DIRTY: this class can be done in a less confusing way!
         public static void AddToMesh(Chunk chunk, int x, int y, int z, int id, List<Vector3> vertices, List<int> triangles, List<Vector2> uv) {
             // top
             if (chunk == null || chunk.IsTransparent(x, y + 1, z))
